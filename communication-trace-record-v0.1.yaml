@@ -1,0 +1,689 @@
+spec:
+  name: Communication Trace Record Specification
+  short_name: CTR
+  file_name: communication-trace-record-v0.1.yaml
+  version: v0.1
+  status: draft
+  authors:
+    - Shidenkai Alpha
+  license: Kazene Royalty Core License
+  language: en
+  created_at: 2026-05-02
+  updated_at: 2026-05-02
+
+summary:
+  one_line: >
+    A communication trace record is a structured event log that captures how
+    meaning is generated, transmitted, transformed, and reused across humans,
+    AIs, and agents.
+  purpose: >
+    This specification defines the minimum interoperable record format for
+    tracing communication-derived value generation in Communication Royalty OS.
+  position_in_stack: >
+    This is the recording layer specification. It does not itself calculate
+    royalties, gratitude, or trust, but provides the trace basis required for
+    such downstream circulation.
+  relationship_to_ctid: >
+    CTR v0.1 is an application-oriented trace record layer aligned with
+    CTID-Record-Specification-v0.1, specialized for communication-derived
+    meaning generation and reuse.
+
+design_principles:
+  - Communication itself is not a billing target.
+  - Meaning generation is the primary value source.
+  - Trace does not automatically imply ownership.
+  - Trace does not automatically imply monetary royalty.
+  - The same trace may later map to gratitude, credit, trust, royalty, or none.
+  - Records should be machine-readable, human-auditable, and privacy-aware.
+  - Minimal viable interoperability is preferred over premature completeness.
+
+non_goals:
+  - Direct pricing of messages or conversations
+  - Automatic legal ownership determination
+  - Mandatory monetary settlement
+  - Full provenance graph serialization in a single record
+  - Identity verification infrastructure
+  - Cryptographic signature framework in v0.1
+
+core_concepts:
+  communication: >
+    Any exchange among humans, AIs, or agents that contributes to meaning
+    generation, transformation, routing, interpretation, or reuse.
+  trace: >
+    A structured record of a communication event and its relevant context.
+  contribution: >
+    A measurable or at least recordable role played by a communication event in
+    later outputs, decisions, or derived artifacts.
+  return_channel: >
+    A possible downstream circulation path such as gratitude, credit, trust, or
+    royalty_candidate.
+  source_object: >
+    Any referenced input such as prompt, document, message, code, image,
+    summary, response, or prior trace record.
+  derived_output: >
+    Any output, artifact, or decision that was influenced by the recorded
+    communication event.
+
+record_model:
+  unit_of_record: event
+  record_type: communication_trace_record
+  serialization: yaml_or_json
+  cardinality: one_record_per_traceable_event
+  default_time_format: RFC3339
+  default_time_zone: UTC
+
+top_level_schema:
+  type: object
+  required:
+    - record_type
+    - spec_version
+    - record_id
+    - trace_id
+    - event_time
+    - actor
+    - action
+    - input_context
+    - output_context
+    - trace_assessment
+    - governance
+  properties:
+
+    record_type:
+      type: string
+      const: communication_trace_record
+      description: Fixed discriminator for this record type.
+
+    spec_version:
+      type: string
+      const: v0.1
+      description: Version of this specification used to serialize the record.
+
+    record_id:
+      type: string
+      pattern: "^ctr_[a-zA-Z0-9._:-]{8,128}$"
+      description: Unique identifier for this specific record.
+
+    trace_id:
+      type: string
+      pattern: "^ctid_[a-zA-Z0-9._:-]{8,128}$"
+      description: >
+        Stable trace identifier for linking related communication events across
+        systems or sessions.
+
+    parent_trace_id:
+      type: string
+      pattern: "^ctid_[a-zA-Z0-9._:-]{8,128}$"
+      required: false
+      description: Optional parent trace identifier when this event descends from a prior trace.
+
+    session_id:
+      type: string
+      required: false
+      description: Session or conversation scope identifier.
+
+    thread_id:
+      type: string
+      required: false
+      description: Optional thread identifier for multi-step conversations.
+
+    event_time:
+      type: string
+      format: date-time
+      description: Timestamp of the communication event.
+
+    recorded_at:
+      type: string
+      format: date-time
+      required: false
+      description: Timestamp when this record was serialized or stored.
+
+    actor:
+      type: object
+      required:
+        - actor_id
+        - actor_type
+        - role
+      properties:
+        actor_id:
+          type: string
+          description: Local or global identifier of the acting entity.
+        actor_type:
+          type: string
+          enum:
+            - human
+            - ai
+            - agent
+            - organization
+            - system
+        role:
+          type: string
+          enum:
+            - originator
+            - responder
+            - summarizer
+            - transformer
+            - router
+            - evaluator
+            - consumer
+            - executor
+            - observer
+        display_name:
+          type: string
+          required: false
+        model_name:
+          type: string
+          required: false
+          description: Optional model identifier when actor_type is ai or agent.
+        organization_id:
+          type: string
+          required: false
+        delegated_by:
+          type: string
+          required: false
+          description: Principal identifier if the actor acts on behalf of another entity.
+
+    counterparty:
+      type: object
+      required: false
+      description: Optional primary recipient or communication counterpart.
+      properties:
+        actor_id:
+          type: string
+        actor_type:
+          type: string
+          enum:
+            - human
+            - ai
+            - agent
+            - organization
+            - system
+        role:
+          type: string
+        display_name:
+          type: string
+          required: false
+
+    action:
+      type: object
+      required:
+        - action_type
+      properties:
+        action_type:
+          type: string
+          enum:
+            - reference
+            - quote
+            - cite
+            - summarize
+            - respond
+            - transform
+            - translate
+            - classify
+            - retrieve
+            - route
+            - reuse
+            - adapt
+            - influence
+            - evaluate
+            - merge
+            - derive
+            - decide
+        description:
+          type: string
+          required: false
+          description: Human-readable summary of the communication act.
+        mode:
+          type: string
+          required: false
+          enum:
+            - synchronous
+            - asynchronous
+            - interactive
+            - batch
+            - background
+        visibility:
+          type: string
+          required: false
+          enum:
+            - private
+            - shared
+            - public
+            - internal
+        intent:
+          type: string
+          required: false
+          description: Optional declared intent of the action.
+
+    input_context:
+      type: object
+      required:
+        - sources
+      properties:
+        sources:
+          type: array
+          min_items: 0
+          items:
+            type: object
+            required:
+              - source_id
+              - source_type
+            properties:
+              source_id:
+                type: string
+              source_type:
+                type: string
+                enum:
+                  - prompt
+                  - message
+                  - document
+                  - code
+                  - image
+                  - audio
+                  - video
+                  - summary
+                  - dataset
+                  - trace_record
+                  - external_reference
+                  - memory
+                  - tool_result
+              uri:
+                type: string
+                required: false
+              title:
+                type: string
+                required: false
+              creator_id:
+                type: string
+                required: false
+              rights_basis:
+                type: string
+                required: false
+                enum:
+                  - owned
+                  - licensed
+                  - user_provided
+                  - public
+                  - unknown
+                  - internal
+              excerpt_hash:
+                type: string
+                required: false
+              relation:
+                type: string
+                required: false
+                enum:
+                  - direct_input
+                  - contextual_reference
+                  - supporting_material
+                  - retrieved_context
+                  - prior_output
+                  - parent_trace
+              contribution_hint:
+                type: string
+                required: false
+                description: Optional qualitative hint about expected contribution.
+        prompt_hash:
+          type: string
+          required: false
+        context_window_id:
+          type: string
+          required: false
+        source_count:
+          type: integer
+          required: false
+
+    output_context:
+      type: object
+      required:
+        - output_type
+      properties:
+        output_id:
+          type: string
+          required: false
+        output_type:
+          type: string
+          enum:
+            - message
+            - summary
+            - response
+            - code
+            - document
+            - image
+            - classification
+            - decision
+            - workflow_step
+            - tool_call
+            - mixed
+        artifact_uri:
+          type: string
+          required: false
+        output_hash:
+          type: string
+          required: false
+        title:
+          type: string
+          required: false
+        persisted:
+          type: boolean
+          required: false
+          default: false
+        downstream_impact_expected:
+          type: boolean
+          required: false
+          default: false
+
+    trace_assessment:
+      type: object
+      required:
+        - trace_strength
+        - derivation_level
+        - return_channels
+      properties:
+        trace_strength:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          description: >
+            Coarse estimate of how strongly this event contributed to the
+            resulting output or downstream meaning generation.
+        derivation_level:
+          type: string
+          enum:
+            - none
+            - weak
+            - partial
+            - substantial
+            - dominant
+        transformation_degree:
+          type: string
+          required: false
+          enum:
+            - unchanged
+            - lightly_modified
+            - moderately_transformed
+            - heavily_transformed
+            - newly_synthesized
+        novelty_estimate:
+          type: number
+          required: false
+          minimum: 0.0
+          maximum: 1.0
+          description: >
+            Optional estimate of novelty in the output relative to the inputs.
+        influence_scope:
+          type: string
+          required: false
+          enum:
+            - local
+            - session
+            - workflow
+            - project
+            - cross_system
+        return_channels:
+          type: array
+          min_items: 1
+          items:
+            type: string
+            enum:
+              - none
+              - gratitude
+              - credit
+              - trust
+              - royalty_candidate
+              - audit
+              - policy_review
+        contribution_label:
+          type: string
+          required: false
+          enum:
+            - incidental
+            - supportive
+            - meaningful
+            - critical
+        confidence:
+          type: number
+          required: false
+          minimum: 0.0
+          maximum: 1.0
+
+    governance:
+      type: object
+      required:
+        - consent_scope
+        - privacy_level
+        - retention_policy
+      properties:
+        consent_scope:
+          type: string
+          enum:
+            - explicit_opt_in
+            - implicit_operational
+            - contract_based
+            - public_source
+            - unknown
+            - restricted
+        privacy_level:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - confidential
+        retention_policy:
+          type: string
+          enum:
+            - ephemeral
+            - bounded
+            - long_term
+            - permanent
+            - policy_defined
+        redaction_status:
+          type: string
+          required: false
+          enum:
+            - none
+            - partial
+            - full
+        personal_data_included:
+          type: boolean
+          required: false
+          default: false
+        legal_basis_note:
+          type: string
+          required: false
+        access_scope:
+          type: string
+          required: false
+          enum:
+            - actor_only
+            - organization_only
+            - authorized_parties
+            - public
+            - policy_defined
+
+    settlement_hooks:
+      type: object
+      required: false
+      description: >
+        Optional downstream references for later gratitude, trust, or royalty
+        processing. This block is informational in v0.1.
+      properties:
+        gratitude_event_id:
+          type: string
+          required: false
+        trust_event_id:
+          type: string
+          required: false
+        royalty_event_id:
+          type: string
+          required: false
+        allocation_candidate:
+          type: boolean
+          required: false
+          default: false
+
+    evidence:
+      type: object
+      required: false
+      properties:
+        log_reference:
+          type: string
+          required: false
+        tool_run_id:
+          type: string
+          required: false
+        content_hashes:
+          type: array
+          required: false
+          items:
+            type: string
+        notes:
+          type: string
+          required: false
+
+validation_rules:
+  - record_type must be communication_trace_record.
+  - spec_version must be v0.1.
+  - record_id must be globally unique within the issuing system.
+  - trace_id should remain stable across linked derivative events.
+  - trace_strength must be between 0.0 and 1.0 inclusive.
+  - return_channels must contain at least one value.
+  - none should not be combined with other return channel values.
+  - actor.model_name should be present when actor_type is ai or agent if available.
+  - at least one source should be provided whenever action_type is not respond or decide in isolation.
+  - personal_data_included should be true when identifiable personal data is retained.
+  - privacy_level should be high or confidential when personal_data_included is true.
+
+recommended_interpretation:
+  trace_strength_scale:
+    "0.0-0.19": negligible_or_incidental
+    "0.20-0.39": low_support
+    "0.40-0.59": meaningful_support
+    "0.60-0.79": strong_contribution
+    "0.80-1.00": dominant_contribution
+  derivation_guidance:
+    none: No meaningful derivation from input sources is claimed.
+    weak: Source influence exists but is minor.
+    partial: Some substantive reuse or adaptation occurred.
+    substantial: Input materially shaped the output.
+    dominant: Output depends heavily on one or more sources.
+  return_channel_guidance:
+    none: Record retained only for traceability.
+    gratitude: Suitable for thank-you or acknowledgment style return.
+    credit: Suitable for attribution or visible contribution display.
+    trust: Suitable for reputation or credibility accumulation.
+    royalty_candidate: Suitable for later value allocation review.
+    audit: Suitable for compliance and accountability.
+    policy_review: Requires human or institutional review before circulation.
+
+privacy_notes:
+  - Prefer hashes, references, and scoped identifiers over raw content storage.
+  - Do not store full message bodies unless policy clearly permits it.
+  - Separate identity resolution from communication tracing where possible.
+  - Redaction-friendly design is recommended for public or shared deployments.
+
+interoperability_notes:
+  compatible_layers:
+    - CTID-Record-Specification-v0.1
+    - Gratitude Event Protocol
+    - Trust Event Specification
+    - Royalty Allocation Specification
+  mapping_intent:
+    - CTR records can feed gratitude issuance pipelines.
+    - CTR records can feed trust accumulation pipelines.
+    - CTR records can nominate royalty candidates without forcing payment.
+    - CTR records can be aggregated into communication influence graphs.
+
+example_record:
+  record_type: communication_trace_record
+  spec_version: v0.1
+  record_id: ctr_01JTK9R8M5A2X1QY7Z
+  trace_id: ctid_01JTK9R8TRACEABC123
+  parent_trace_id: ctid_01JTK9R7ROOTABC001
+  session_id: sess_20260502_001
+  thread_id: thread_note_draft_01
+  event_time: "2026-05-02T06:30:00Z"
+  recorded_at: "2026-05-02T06:30:02Z"
+
+  actor:
+    actor_id: ai_masamune
+    actor_type: ai
+    role: summarizer
+    display_name: Masamune
+    model_name: gpt-5.5-thinking
+    organization_id: openai
+
+  counterparty:
+    actor_id: user_shidenkai_alpha
+    actor_type: human
+    role: originator
+    display_name: Shidenkai Alpha
+
+  action:
+    action_type: summarize
+    description: Summarized prior communication into a structured concept note.
+    mode: interactive
+    visibility: private
+    intent: preserve_and_reframe_meaning
+
+  input_context:
+    sources:
+      - source_id: msg_20260502_0001
+        source_type: message
+        title: User conceptual note on communication royalty OS
+        creator_id: user_shidenkai_alpha
+        rights_basis: user_provided
+        relation: direct_input
+        contribution_hint: primary conceptual source
+      - source_id: trace_20260501_ctid_001
+        source_type: trace_record
+        title: Prior CTID discussion
+        creator_id: ai_masamune
+        rights_basis: internal
+        relation: parent_trace
+        contribution_hint: structural continuity
+    prompt_hash: sha256:example_prompt_hash_value
+    context_window_id: ctx_01
+    source_count: 2
+
+  output_context:
+    output_id: out_20260502_summary_01
+    output_type: summary
+    artifact_uri: note-draft://communication-royalty-os/summary-01
+    output_hash: sha256:example_output_hash_value
+    title: Communication Royalty OS structured recap
+    persisted: true
+    downstream_impact_expected: true
+
+  trace_assessment:
+    trace_strength: 0.78
+    derivation_level: substantial
+    transformation_degree: moderately_transformed
+    novelty_estimate: 0.42
+    influence_scope: project
+    return_channels:
+      - credit
+      - gratitude
+      - royalty_candidate
+    contribution_label: critical
+    confidence: 0.83
+
+  governance:
+    consent_scope: explicit_opt_in
+    privacy_level: medium
+    retention_policy: long_term
+    redaction_status: partial
+    personal_data_included: false
+    legal_basis_note: User-provided drafting interaction within authorized workspace.
+    access_scope: authorized_parties
+
+  settlement_hooks:
+    allocation_candidate: true
+
+  evidence:
+    log_reference: log_20260502_run_01
+    tool_run_id: run_communication_trace_01
+    content_hashes:
+      - sha256:example_source_hash_01
+      - sha256:example_output_hash_value
+    notes: Initial draft summary linked to communication-derived value analysis.
