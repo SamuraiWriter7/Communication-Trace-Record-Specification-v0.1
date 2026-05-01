@@ -67,13 +67,23 @@ core_concepts:
 record_model:
   unit_of_record: event
   record_type: communication_trace_record
-  serialization: yaml_or_json
+  serialization:
+    - yaml
+    - json
   cardinality: one_record_per_traceable_event
   default_time_format: RFC3339
   default_time_zone: UTC
 
-top_level_schema:
+record_schema:
+  $schema: "https://json-schema.org/draft/2020-12/schema"
+  $id: "https://kazene.org/schemas/communication-trace-record-v0.1.schema.json"
+  title: "Communication Trace Record v0.1"
+  description: >
+    JSON Schema compatible record definition for communication-derived trace
+    events in Communication Royalty OS.
   type: object
+  additionalProperties: false
+
   required:
     - record_type
     - spec_version
@@ -86,8 +96,8 @@ top_level_schema:
     - output_context
     - trace_assessment
     - governance
-  properties:
 
+  properties:
     record_type:
       type: string
       const: communication_trace_record
@@ -100,30 +110,25 @@ top_level_schema:
 
     record_id:
       type: string
-      pattern: "^ctr_[a-zA-Z0-9._:-]{8,128}$"
+      pattern: "^ctr_[A-Za-z0-9._:-]{8,128}$"
       description: Unique identifier for this specific record.
 
     trace_id:
       type: string
-      pattern: "^ctid_[a-zA-Z0-9._:-]{8,128}$"
-      description: >
-        Stable trace identifier for linking related communication events across
-        systems or sessions.
+      pattern: "^ctid_[A-Za-z0-9._:-]{8,128}$"
+      description: Stable trace identifier for linking related events.
 
     parent_trace_id:
       type: string
-      pattern: "^ctid_[a-zA-Z0-9._:-]{8,128}$"
-      required: false
-      description: Optional parent trace identifier when this event descends from a prior trace.
+      pattern: "^ctid_[A-Za-z0-9._:-]{8,128}$"
+      description: Optional parent trace identifier.
 
     session_id:
       type: string
-      required: false
-      description: Session or conversation scope identifier.
+      description: Optional session or conversation scope identifier.
 
     thread_id:
       type: string
-      required: false
       description: Optional thread identifier for multi-step conversations.
 
     event_time:
@@ -134,11 +139,66 @@ top_level_schema:
     recorded_at:
       type: string
       format: date-time
-      required: false
       description: Timestamp when this record was serialized or stored.
 
     actor:
+      $ref: "#/$defs/actor"
+
+    counterparty:
+      $ref: "#/$defs/party"
+
+    action:
+      $ref: "#/$defs/action"
+
+    input_context:
+      $ref: "#/$defs/input_context"
+
+    output_context:
+      $ref: "#/$defs/output_context"
+
+    trace_assessment:
+      $ref: "#/$defs/trace_assessment"
+
+    governance:
+      $ref: "#/$defs/governance"
+
+    settlement_hooks:
+      $ref: "#/$defs/settlement_hooks"
+
+    evidence:
+      $ref: "#/$defs/evidence"
+
+  allOf:
+    - if:
+        properties:
+          actor:
+            properties:
+              actor_type:
+                enum: [ai, agent]
+            required: [actor_type]
+      then:
+        properties:
+          actor:
+            required: [model_name]
+
+    - if:
+        properties:
+          governance:
+            properties:
+              personal_data_included:
+                const: true
+            required: [personal_data_included]
+      then:
+        properties:
+          governance:
+            properties:
+              privacy_level:
+                enum: [high, confidential]
+
+  $defs:
+    actor:
       type: object
+      additionalProperties: false
       required:
         - actor_id
         - actor_type
@@ -169,23 +229,22 @@ top_level_schema:
             - observer
         display_name:
           type: string
-          required: false
         model_name:
           type: string
-          required: false
-          description: Optional model identifier when actor_type is ai or agent.
+          description: Recommended for ai or agent actors.
         organization_id:
           type: string
-          required: false
         delegated_by:
           type: string
-          required: false
-          description: Principal identifier if the actor acts on behalf of another entity.
+          description: Principal identifier if acting on behalf of another entity.
 
-    counterparty:
+    party:
       type: object
-      required: false
-      description: Optional primary recipient or communication counterpart.
+      additionalProperties: false
+      required:
+        - actor_id
+        - actor_type
+        - role
       properties:
         actor_id:
           type: string
@@ -201,10 +260,10 @@ top_level_schema:
           type: string
         display_name:
           type: string
-          required: false
 
     action:
       type: object
+      additionalProperties: false
       required:
         - action_type
       properties:
@@ -230,11 +289,8 @@ top_level_schema:
             - decide
         description:
           type: string
-          required: false
-          description: Human-readable summary of the communication act.
         mode:
           type: string
-          required: false
           enum:
             - synchronous
             - asynchronous
@@ -243,7 +299,6 @@ top_level_schema:
             - background
         visibility:
           type: string
-          required: false
           enum:
             - private
             - shared
@@ -251,95 +306,87 @@ top_level_schema:
             - internal
         intent:
           type: string
-          required: false
-          description: Optional declared intent of the action.
+
+    source:
+      type: object
+      additionalProperties: false
+      required:
+        - source_id
+        - source_type
+      properties:
+        source_id:
+          type: string
+        source_type:
+          type: string
+          enum:
+            - prompt
+            - message
+            - document
+            - code
+            - image
+            - audio
+            - video
+            - summary
+            - dataset
+            - trace_record
+            - external_reference
+            - memory
+            - tool_result
+        uri:
+          type: string
+        title:
+          type: string
+        creator_id:
+          type: string
+        rights_basis:
+          type: string
+          enum:
+            - owned
+            - licensed
+            - user_provided
+            - public
+            - unknown
+            - internal
+        excerpt_hash:
+          type: string
+        relation:
+          type: string
+          enum:
+            - direct_input
+            - contextual_reference
+            - supporting_material
+            - retrieved_context
+            - prior_output
+            - parent_trace
+        contribution_hint:
+          type: string
 
     input_context:
       type: object
+      additionalProperties: false
       required:
         - sources
       properties:
         sources:
           type: array
-          min_items: 0
           items:
-            type: object
-            required:
-              - source_id
-              - source_type
-            properties:
-              source_id:
-                type: string
-              source_type:
-                type: string
-                enum:
-                  - prompt
-                  - message
-                  - document
-                  - code
-                  - image
-                  - audio
-                  - video
-                  - summary
-                  - dataset
-                  - trace_record
-                  - external_reference
-                  - memory
-                  - tool_result
-              uri:
-                type: string
-                required: false
-              title:
-                type: string
-                required: false
-              creator_id:
-                type: string
-                required: false
-              rights_basis:
-                type: string
-                required: false
-                enum:
-                  - owned
-                  - licensed
-                  - user_provided
-                  - public
-                  - unknown
-                  - internal
-              excerpt_hash:
-                type: string
-                required: false
-              relation:
-                type: string
-                required: false
-                enum:
-                  - direct_input
-                  - contextual_reference
-                  - supporting_material
-                  - retrieved_context
-                  - prior_output
-                  - parent_trace
-              contribution_hint:
-                type: string
-                required: false
-                description: Optional qualitative hint about expected contribution.
+            $ref: "#/$defs/source"
         prompt_hash:
           type: string
-          required: false
         context_window_id:
           type: string
-          required: false
         source_count:
           type: integer
-          required: false
+          minimum: 0
 
     output_context:
       type: object
+      additionalProperties: false
       required:
         - output_type
       properties:
         output_id:
           type: string
-          required: false
         output_type:
           type: string
           enum:
@@ -356,24 +403,20 @@ top_level_schema:
             - mixed
         artifact_uri:
           type: string
-          required: false
         output_hash:
           type: string
-          required: false
         title:
           type: string
-          required: false
         persisted:
           type: boolean
-          required: false
           default: false
         downstream_impact_expected:
           type: boolean
-          required: false
           default: false
 
     trace_assessment:
       type: object
+      additionalProperties: false
       required:
         - trace_strength
         - derivation_level
@@ -383,9 +426,6 @@ top_level_schema:
           type: number
           minimum: 0.0
           maximum: 1.0
-          description: >
-            Coarse estimate of how strongly this event contributed to the
-            resulting output or downstream meaning generation.
         derivation_level:
           type: string
           enum:
@@ -396,7 +436,6 @@ top_level_schema:
             - dominant
         transformation_degree:
           type: string
-          required: false
           enum:
             - unchanged
             - lightly_modified
@@ -405,14 +444,10 @@ top_level_schema:
             - newly_synthesized
         novelty_estimate:
           type: number
-          required: false
           minimum: 0.0
           maximum: 1.0
-          description: >
-            Optional estimate of novelty in the output relative to the inputs.
         influence_scope:
           type: string
-          required: false
           enum:
             - local
             - session
@@ -421,7 +456,7 @@ top_level_schema:
             - cross_system
         return_channels:
           type: array
-          min_items: 1
+          minItems: 1
           items:
             type: string
             enum:
@@ -432,9 +467,9 @@ top_level_schema:
               - royalty_candidate
               - audit
               - policy_review
+          uniqueItems: true
         contribution_label:
           type: string
-          required: false
           enum:
             - incidental
             - supportive
@@ -442,12 +477,12 @@ top_level_schema:
             - critical
         confidence:
           type: number
-          required: false
           minimum: 0.0
           maximum: 1.0
 
     governance:
       type: object
+      additionalProperties: false
       required:
         - consent_scope
         - privacy_level
@@ -479,21 +514,17 @@ top_level_schema:
             - policy_defined
         redaction_status:
           type: string
-          required: false
           enum:
             - none
             - partial
             - full
         personal_data_included:
           type: boolean
-          required: false
           default: false
         legal_basis_note:
           type: string
-          required: false
         access_scope:
           type: string
-          required: false
           enum:
             - actor_only
             - organization_only
@@ -503,56 +534,42 @@ top_level_schema:
 
     settlement_hooks:
       type: object
-      required: false
-      description: >
-        Optional downstream references for later gratitude, trust, or royalty
-        processing. This block is informational in v0.1.
+      additionalProperties: false
       properties:
         gratitude_event_id:
           type: string
-          required: false
         trust_event_id:
           type: string
-          required: false
         royalty_event_id:
           type: string
-          required: false
         allocation_candidate:
           type: boolean
-          required: false
           default: false
 
     evidence:
       type: object
-      required: false
+      additionalProperties: false
       properties:
         log_reference:
           type: string
-          required: false
         tool_run_id:
           type: string
-          required: false
         content_hashes:
           type: array
-          required: false
           items:
             type: string
         notes:
           type: string
-          required: false
 
-validation_rules:
+validation_notes:
   - record_type must be communication_trace_record.
   - spec_version must be v0.1.
-  - record_id must be globally unique within the issuing system.
+  - record_id should be globally unique within the issuing system.
   - trace_id should remain stable across linked derivative events.
-  - trace_strength must be between 0.0 and 1.0 inclusive.
-  - return_channels must contain at least one value.
   - none should not be combined with other return channel values.
-  - actor.model_name should be present when actor_type is ai or agent if available.
-  - at least one source should be provided whenever action_type is not respond or decide in isolation.
-  - personal_data_included should be true when identifiable personal data is retained.
-  - privacy_level should be high or confidential when personal_data_included is true.
+  - source_count should match the actual number of sources when present.
+  - at least one source is recommended unless the event is genuinely standalone.
+  - Prefer hashes and references over raw content storage.
 
 recommended_interpretation:
   trace_strength_scale:
