@@ -1,0 +1,101 @@
+{
+  "record_type": "communication_trace_record",
+  "spec_version": "v0.1",
+  "record_id": "ctr_01JTK9R8M5A2X1QY7Z",
+  "trace_id": "ctid_01JTK9R8TRACEABC123",
+  "parent_trace_id": "ctid_01JTK9R7ROOTABC001",
+  "session_id": "sess_20260502_001",
+  "thread_id": "thread_note_draft_01",
+  "event_time": "2026-05-02T06:30:00Z",
+  "recorded_at": "2026-05-02T06:30:02Z",
+  "actor": {
+    "actor_id": "ai_masamune",
+    "actor_type": "ai",
+    "role": "summarizer",
+    "display_name": "Masamune",
+    "model_name": "gpt-5.5-thinking",
+    "organization_id": "openai"
+  },
+  "counterparty": {
+    "actor_id": "user_shidenkai_alpha",
+    "actor_type": "human",
+    "role": "originator",
+    "display_name": "Shidenkai Alpha"
+  },
+  "action": {
+    "action_type": "summarize",
+    "description": "Summarized prior communication into a structured concept note.",
+    "mode": "interactive",
+    "visibility": "private",
+    "intent": "preserve_and_reframe_meaning"
+  },
+  "input_context": {
+    "sources": [
+      {
+        "source_id": "msg_20260502_0001",
+        "source_type": "message",
+        "title": "User conceptual note on communication royalty OS",
+        "creator_id": "user_shidenkai_alpha",
+        "rights_basis": "user_provided",
+        "relation": "direct_input",
+        "contribution_hint": "primary conceptual source"
+      },
+      {
+        "source_id": "trace_20260501_ctid_001",
+        "source_type": "trace_record",
+        "title": "Prior CTID discussion",
+        "creator_id": "ai_masamune",
+        "rights_basis": "internal",
+        "relation": "parent_trace",
+        "contribution_hint": "structural continuity"
+      }
+    ],
+    "prompt_hash": "sha256:example_prompt_hash_value",
+    "context_window_id": "ctx_01",
+    "source_count": 2
+  },
+  "output_context": {
+    "output_id": "out_20260502_summary_01",
+    "output_type": "summary",
+    "artifact_uri": "note-draft://communication-royalty-os/summary-01",
+    "output_hash": "sha256:example_output_hash_value",
+    "title": "Communication Royalty OS structured recap",
+    "persisted": true,
+    "downstream_impact_expected": true
+  },
+  "trace_assessment": {
+    "trace_strength": 0.78,
+    "derivation_level": "substantial",
+    "transformation_degree": "moderately_transformed",
+    "novelty_estimate": 0.42,
+    "influence_scope": "project",
+    "return_channels": [
+      "credit",
+      "gratitude",
+      "royalty_candidate"
+    ],
+    "contribution_label": "critical",
+    "confidence": 0.83
+  },
+  "governance": {
+    "consent_scope": "explicit_opt_in",
+    "privacy_level": "medium",
+    "retention_policy": "long_term",
+    "redaction_status": "partial",
+    "personal_data_included": false,
+    "legal_basis_note": "User-provided drafting interaction within authorized workspace.",
+    "access_scope": "authorized_parties"
+  },
+  "settlement_hooks": {
+    "allocation_candidate": true
+  },
+  "evidence": {
+    "log_reference": "log_20260502_run_01",
+    "tool_run_id": "run_communication_trace_01",
+    "content_hashes": [
+      "sha256:example_source_hash_01",
+      "sha256:example_output_hash_value"
+    ],
+    "notes": "Initial draft summary linked to communication-derived value analysis."
+  }
+}
