@@ -1,0 +1,623 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Communication Trace Record v0.1",
+  "description": "JSON Schema for communication-derived trace events in Communication Royalty OS.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record_type",
+    "spec_version",
+    "record_id",
+    "trace_id",
+    "event_time",
+    "actor",
+    "action",
+    "input_context",
+    "output_context",
+    "trace_assessment",
+    "governance"
+  ],
+  "properties": {
+    "record_type": {
+      "type": "string",
+      "const": "communication_trace_record",
+      "description": "Fixed discriminator for this record type."
+    },
+    "spec_version": {
+      "type": "string",
+      "const": "v0.1",
+      "description": "Version of this specification used to serialize the record."
+    },
+    "record_id": {
+      "type": "string",
+      "pattern": "^ctr_[A-Za-z0-9._:-]{8,128}$",
+      "description": "Unique identifier for this specific record."
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^ctid_[A-Za-z0-9._:-]{8,128}$",
+      "description": "Stable trace identifier for linking related events."
+    },
+    "parent_trace_id": {
+      "type": "string",
+      "pattern": "^ctid_[A-Za-z0-9._:-]{8,128}$",
+      "description": "Optional parent trace identifier."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Optional session or conversation scope identifier."
+    },
+    "thread_id": {
+      "type": "string",
+      "description": "Optional thread identifier for multi-step conversations."
+    },
+    "event_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the communication event."
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when this record was serialized or stored."
+    },
+    "actor": {
+      "$ref": "#/$defs/actor"
+    },
+    "counterparty": {
+      "$ref": "#/$defs/party"
+    },
+    "action": {
+      "$ref": "#/$defs/action"
+    },
+    "input_context": {
+      "$ref": "#/$defs/input_context"
+    },
+    "output_context": {
+      "$ref": "#/$defs/output_context"
+    },
+    "trace_assessment": {
+      "$ref": "#/$defs/trace_assessment"
+    },
+    "governance": {
+      "$ref": "#/$defs/governance"
+    },
+    "settlement_hooks": {
+      "$ref": "#/$defs/settlement_hooks"
+    },
+    "evidence": {
+      "$ref": "#/$defs/evidence"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "actor": {
+            "type": "object",
+            "properties": {
+              "actor_type": {
+                "enum": ["ai", "agent"]
+              }
+            },
+            "required": ["actor_type"]
+          }
+        },
+        "required": ["actor"]
+      },
+      "then": {
+        "properties": {
+          "actor": {
+            "required": ["model_name"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "governance": {
+            "type": "object",
+            "properties": {
+              "personal_data_included": {
+                "const": true
+              }
+            },
+            "required": ["personal_data_included"]
+          }
+        },
+        "required": ["governance"]
+      },
+      "then": {
+        "properties": {
+          "governance": {
+            "properties": {
+              "privacy_level": {
+                "enum": ["high", "confidential"]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor_id",
+        "actor_type",
+        "role"
+      ],
+      "properties": {
+        "actor_id": {
+          "type": "string",
+          "description": "Local or global identifier of the acting entity."
+        },
+        "actor_type": {
+          "type": "string",
+          "enum": [
+            "human",
+            "ai",
+            "agent",
+            "organization",
+            "system"
+          ]
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "originator",
+            "responder",
+            "summarizer",
+            "transformer",
+            "router",
+            "evaluator",
+            "consumer",
+            "executor",
+            "observer"
+          ]
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "model_name": {
+          "type": "string",
+          "description": "Recommended for ai or agent actors."
+        },
+        "organization_id": {
+          "type": "string"
+        },
+        "delegated_by": {
+          "type": "string",
+          "description": "Principal identifier if acting on behalf of another entity."
+        }
+      }
+    },
+    "party": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor_id",
+        "actor_type",
+        "role"
+      ],
+      "properties": {
+        "actor_id": {
+          "type": "string"
+        },
+        "actor_type": {
+          "type": "string",
+          "enum": [
+            "human",
+            "ai",
+            "agent",
+            "organization",
+            "system"
+          ]
+        },
+        "role": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_type"
+      ],
+      "properties": {
+        "action_type": {
+          "type": "string",
+          "enum": [
+            "reference",
+            "quote",
+            "cite",
+            "summarize",
+            "respond",
+            "transform",
+            "translate",
+            "classify",
+            "retrieve",
+            "route",
+            "reuse",
+            "adapt",
+            "influence",
+            "evaluate",
+            "merge",
+            "derive",
+            "decide"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "synchronous",
+            "asynchronous",
+            "interactive",
+            "batch",
+            "background"
+          ]
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "private",
+            "shared",
+            "public",
+            "internal"
+          ]
+        },
+        "intent": {
+          "type": "string"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_type"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string"
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "prompt",
+            "message",
+            "document",
+            "code",
+            "image",
+            "audio",
+            "video",
+            "summary",
+            "dataset",
+            "trace_record",
+            "external_reference",
+            "memory",
+            "tool_result"
+          ]
+        },
+        "uri": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "creator_id": {
+          "type": "string"
+        },
+        "rights_basis": {
+          "type": "string",
+          "enum": [
+            "owned",
+            "licensed",
+            "user_provided",
+            "public",
+            "unknown",
+            "internal"
+          ]
+        },
+        "excerpt_hash": {
+          "type": "string"
+        },
+        "relation": {
+          "type": "string",
+          "enum": [
+            "direct_input",
+            "contextual_reference",
+            "supporting_material",
+            "retrieved_context",
+            "prior_output",
+            "parent_trace"
+          ]
+        },
+        "contribution_hint": {
+          "type": "string"
+        }
+      }
+    },
+    "input_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sources"
+      ],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          }
+        },
+        "prompt_hash": {
+          "type": "string"
+        },
+        "context_window_id": {
+          "type": "string"
+        },
+        "source_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "output_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_type"
+      ],
+      "properties": {
+        "output_id": {
+          "type": "string"
+        },
+        "output_type": {
+          "type": "string",
+          "enum": [
+            "message",
+            "summary",
+            "response",
+            "code",
+            "document",
+            "image",
+            "classification",
+            "decision",
+            "workflow_step",
+            "tool_call",
+            "mixed"
+          ]
+        },
+        "artifact_uri": {
+          "type": "string"
+        },
+        "output_hash": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "persisted": {
+          "type": "boolean",
+          "default": false
+        },
+        "downstream_impact_expected": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "trace_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trace_strength",
+        "derivation_level",
+        "return_channels"
+      ],
+      "properties": {
+        "trace_strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "derivation_level": {
+          "type": "string",
+          "enum": [
+            "none",
+            "weak",
+            "partial",
+            "substantial",
+            "dominant"
+          ]
+        },
+        "transformation_degree": {
+          "type": "string",
+          "enum": [
+            "unchanged",
+            "lightly_modified",
+            "moderately_transformed",
+            "heavily_transformed",
+            "newly_synthesized"
+          ]
+        },
+        "novelty_estimate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "influence_scope": {
+          "type": "string",
+          "enum": [
+            "local",
+            "session",
+            "workflow",
+            "project",
+            "cross_system"
+          ]
+        },
+        "return_channels": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "const": "none"
+              },
+              "minItems": 1,
+              "maxItems": 1,
+              "uniqueItems": true
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "gratitude",
+                  "credit",
+                  "trust",
+                  "royalty_candidate",
+                  "audit",
+                  "policy_review"
+                ]
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          ]
+        },
+        "contribution_label": {
+          "type": "string",
+          "enum": [
+            "incidental",
+            "supportive",
+            "meaningful",
+            "critical"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consent_scope",
+        "privacy_level",
+        "retention_policy"
+      ],
+      "properties": {
+        "consent_scope": {
+          "type": "string",
+          "enum": [
+            "explicit_opt_in",
+            "implicit_operational",
+            "contract_based",
+            "public_source",
+            "unknown",
+            "restricted"
+          ]
+        },
+        "privacy_level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "confidential"
+          ]
+        },
+        "retention_policy": {
+          "type": "string",
+          "enum": [
+            "ephemeral",
+            "bounded",
+            "long_term",
+            "permanent",
+            "policy_defined"
+          ]
+        },
+        "redaction_status": {
+          "type": "string",
+          "enum": [
+            "none",
+            "partial",
+            "full"
+          ]
+        },
+        "personal_data_included": {
+          "type": "boolean",
+          "default": false
+        },
+        "legal_basis_note": {
+          "type": "string"
+        },
+        "access_scope": {
+          "type": "string",
+          "enum": [
+            "actor_only",
+            "organization_only",
+            "authorized_parties",
+            "public",
+            "policy_defined"
+          ]
+        }
+      }
+    },
+    "settlement_hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gratitude_event_id": {
+          "type": "string"
+        },
+        "trust_event_id": {
+          "type": "string"
+        },
+        "royalty_event_id": {
+          "type": "string"
+        },
+        "allocation_candidate": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "log_reference": {
+          "type": "string"
+        },
+        "tool_run_id": {
+          "type": "string"
+        },
+        "content_hashes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
