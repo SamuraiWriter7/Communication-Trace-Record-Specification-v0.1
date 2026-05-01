@@ -33,9 +33,9 @@ jobs:
           import yaml
           from jsonschema import Draft202012Validator
 
-          spec_path = Path("spec/communication-trace-record-v0.1.yaml")
+          spec_path = Path("communication-trace-record-v0.1.yaml")
           schema_path = Path("schemas/communication-trace-record-v0.1.schema.json")
-          sample_path = Path("examples/communication-trace-record.sample.json")
+          sample_path = Path("schemas/examples/communication-trace-record.sample.json")
 
           failed = False
 
@@ -49,7 +49,6 @@ jobs:
           print(f"Schema: {schema_path}")
           print(f"Sample: {sample_path}")
 
-          # Check file existence
           for path in [spec_path, schema_path, sample_path]:
               if not path.exists():
                   fail(f"File not found: {path}")
@@ -57,17 +56,14 @@ jobs:
           if failed:
               raise SystemExit("Validation failed.")
 
-          # Validate YAML spec parses
-          print("\n--- Parsing YAML spec ---")
           try:
               with spec_path.open("r", encoding="utf-8") as f:
                   spec = yaml.safe_load(f)
               print("OK: YAML spec parsed successfully.")
           except Exception as e:
               fail(f"Invalid YAML in {spec_path}: {e}")
+              spec = None
 
-          # Validate JSON schema parses and is itself valid
-          print("\n--- Parsing JSON schema ---")
           try:
               with schema_path.open("r", encoding="utf-8") as f:
                   schema = json.load(f)
@@ -77,15 +73,12 @@ jobs:
               schema = None
 
           if schema is not None:
-              print("\n--- Checking JSON schema validity ---")
               try:
                   Draft202012Validator.check_schema(schema)
                   print("OK: JSON schema is valid.")
               except Exception as e:
                   fail(f"Schema validation error in {schema_path}: {e}")
 
-          # Validate sample parses
-          print("\n--- Parsing sample JSON ---")
           try:
               with sample_path.open("r", encoding="utf-8") as f:
                   sample = json.load(f)
@@ -94,42 +87,34 @@ jobs:
               fail(f"Invalid JSON in {sample_path}: {e}")
               sample = None
 
-          # Validate sample against schema
           if schema is not None and sample is not None:
-              print("\n--- Validating sample against schema ---")
               try:
                   Draft202012Validator(schema).validate(sample)
                   print("OK: Communication Trace Record v0.1 sample is valid.")
               except Exception as e:
                   fail(f"Sample validation error: {e}")
 
-          # Optional lightweight consistency checks
-          if isinstance(spec, dict):
-              print("\n--- Checking lightweight spec consistency ---")
-              try:
-                  declared_name = (((spec.get("spec") or {}).get("name")) if isinstance(spec.get("spec"), dict) else None)
-                  declared_version = (((spec.get("spec") or {}).get("version")) if isinstance(spec.get("spec"), dict) else None)
-
-                  if declared_name != "Communication Trace Record Specification":
+          if spec is not None and isinstance(spec, dict):
+              spec_block = spec.get("spec", {})
+              if isinstance(spec_block, dict):
+                  if spec_block.get("name") != "Communication Trace Record Specification":
                       fail(
                           "Unexpected spec.name in YAML. "
-                          f"Expected 'Communication Trace Record Specification', got {declared_name!r}"
+                          f"Expected 'Communication Trace Record Specification', got {spec_block.get('name')!r}"
                       )
                   else:
                       print("OK: spec.name matches expected value.")
 
-                  if declared_version != "v0.1":
+                  if spec_block.get("version") != "v0.1":
                       fail(
                           "Unexpected spec.version in YAML. "
-                          f"Expected 'v0.1', got {declared_version!r}"
+                          f"Expected 'v0.1', got {spec_block.get('version')!r}"
                       )
                   else:
                       print("OK: spec.version matches expected value.")
-              except Exception as e:
-                  fail(f"Spec consistency check failed: {e}")
 
           if failed:
               raise SystemExit("Validation failed.")
 
-          print("\nAll validations passed.")
+          print("All validations passed.")
           PY
