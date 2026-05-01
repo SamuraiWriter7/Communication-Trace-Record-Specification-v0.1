@@ -1,0 +1,121 @@
+name: Validate Specs
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jsonschema PyYAML
+
+      - name: Validate spec, schema, and sample
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          import yaml
+          from jsonschema import Draft202012Validator
+
+          # Adjust these three paths if your repository layout differs.
+          spec_path = Path("spec/communication-trace-record-v0.1.yaml")
+          schema_path = Path("schemas/communication-trace-record-v0.1.schema.json")
+          sample_path = Path("examples/communication-trace-record.sample.json")
+
+          failed = False
+
+          def fail(message: str):
+              global failed
+              failed = True
+              print(f"ERROR: {message}")
+
+          print("=== Communication Trace Record v0.1 Validation ===")
+          print(f"Spec:   {spec_path}")
+          print(f"Schema: {schema_path}")
+          print(f"Sample: {sample_path}")
+
+          for path in [spec_path, schema_path, sample_path]:
+              if not path.exists():
+                  fail(f"File not found: {path}")
+
+          if failed:
+              raise SystemExit("Validation failed.")
+
+          try:
+              with spec_path.open("r", encoding="utf-8") as f:
+                  spec = yaml.safe_load(f)
+              print("OK: YAML spec parsed successfully.")
+          except Exception as e:
+              fail(f"Invalid YAML in {spec_path}: {e}")
+              spec = None
+
+          try:
+              with schema_path.open("r", encoding="utf-8") as f:
+                  schema = json.load(f)
+              print("OK: JSON schema parsed successfully.")
+          except Exception as e:
+              fail(f"Invalid JSON in {schema_path}: {e}")
+              schema = None
+
+          if schema is not None:
+              try:
+                  Draft202012Validator.check_schema(schema)
+                  print("OK: JSON schema is valid.")
+              except Exception as e:
+                  fail(f"Schema validation error in {schema_path}: {e}")
+
+          try:
+              with sample_path.open("r", encoding="utf-8") as f:
+                  sample = json.load(f)
+              print("OK: Sample JSON parsed successfully.")
+          except Exception as e:
+              fail(f"Invalid JSON in {sample_path}: {e}")
+              sample = None
+
+          if schema is not None and sample is not None:
+              try:
+                  Draft202012Validator(schema).validate(sample)
+                  print("OK: Communication Trace Record v0.1 sample is valid.")
+              except Exception as e:
+                  fail(f"Sample validation error: {e}")
+
+          if spec is not None and isinstance(spec, dict):
+              spec_block = spec.get("spec", {})
+              if isinstance(spec_block, dict):
+                  if spec_block.get("name") != "Communication Trace Record Specification":
+                      fail(
+                          "Unexpected spec.name in YAML. "
+                          f"Expected 'Communication Trace Record Specification', got {spec_block.get('name')!r}"
+                      )
+                  else:
+                      print("OK: spec.name matches expected value.")
+
+                  if spec_block.get("version") != "v0.1":
+                      fail(
+                          "Unexpected spec.version in YAML. "
+                          f"Expected 'v0.1', got {spec_block.get('version')!r}"
+                      )
+                  else:
+                      print("OK: spec.version matches expected value.")
+
+          if failed:
+              raise SystemExit("Validation failed.")
+
+          print("All validations passed.")
+          PY
